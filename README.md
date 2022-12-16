@@ -42,12 +42,12 @@ Supported targets are:
 
 For go >= 1.16:
 ```
-go install github.com/fyne-io/fyne-cross@latest
+go install github.com/gavintan/fyne-cross@latest
 ```
 
 For older go:
 ```
-GO111MODULE=on go get -u github.com/fyne-io/fyne-cross
+GO111MODULE=on go get -u github.com/gavintan/fyne-cross
 ```
 
 > `fyne-cross` will be installed in GOPATH/bin, unless GOBIN is set.
