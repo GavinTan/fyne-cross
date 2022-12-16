@@ -29,7 +29,7 @@ linux: base
 	@$(RUNNER) build --build-arg FYNE_CROSS_VERSION=${FYNE_CROSS_VERSION} -f ${CURDIR}/docker/linux-arm64/Dockerfile -t fyneio/fyne-cross:${FYNE_CROSS_VERSION}-linux-arm64 .
 
 windows: base
-	@$(RUNNER) build --build-arg FYNE_CROSS_VERSION=${FYNE_CROSS_VERSION} -f ${CURDIR}/docker/windows/Dockerfile -t fyneio/fyne-cross:${FYNE_CROSS_VERSION}-windows .
+	@$(RUNNER) build --build-arg FYNE_CROSS_VERSION=${FYNE_CROSS_VERSION} -f ${CURDIR}/docker/windows/Dockerfile -t yyxx/fyne-cross:${FYNE_CROSS_VERSION}-windows .
 
 web: base
 	@$(RUNNER) build --build-arg FYNE_CROSS_VERSION=${FYNE_CROSS_VERSION} -f ${CURDIR}/docker/web/Dockerfile -t fyneio/fyne-cross:${FYNE_CROSS_VERSION}-web .
@@ -56,7 +56,7 @@ tag-images:
 	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-amd64 fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-amd64-$(tag)
 	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-arm64 fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-arm64-$(tag)
 	# tag windows images
-	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-windows fyneio/fyne-cross:${FYNE_CROSS_VERSION}-windows-$(tag)
+	@$(RUNNER) tag yyxx/fyne-cross:${FYNE_CROSS_VERSION}-windows yyxx/fyne-cross:${FYNE_CROSS_VERSION}-windows-$(tag)
 	# tag web images
 	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-web fyneio/fyne-cross:${FYNE_CROSS_VERSION}-web-$(tag)
 
@@ -75,7 +75,7 @@ podman-tag:
 	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-amd64 $(REGISTRY)/fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-amd64
 	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-arm64 $(REGISTRY)/fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-arm64
 	# tag windows images
-	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-windows $(REGISTRY)/fyneio/fyne-cross:${FYNE_CROSS_VERSION}-windows
+	@$(RUNNER) tag yyxx/fyne-cross:${FYNE_CROSS_VERSION}-windows $(REGISTRY)/yyxx/fyne-cross:${FYNE_CROSS_VERSION}-windows
 	# tag web images
 	@$(RUNNER) tag fyneio/fyne-cross:${FYNE_CROSS_VERSION}-web $(REGISTRY)/fyneio/fyne-cross:${FYNE_CROSS_VERSION}-web
 
@@ -91,7 +91,7 @@ push-latest-images:
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-linux-arm64
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-amd64
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-arm64
-	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-windows
+	@$(RUNNER) push yyxx/fyne-cross:${FYNE_CROSS_VERSION}-windows
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-web
 
 # push the tagged images
@@ -105,7 +105,7 @@ push-tag-images:
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-linux-arm64-$(tag)
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-amd64-$(tag)
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-freebsd-arm64-$(tag)
-	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-windows-$(tag)
+	@$(RUNNER) push yyxx/fyne-cross:${FYNE_CROSS_VERSION}-windows-$(tag)
 	@$(RUNNER) push fyneio/fyne-cross:${FYNE_CROSS_VERSION}-web-$(tag)
 
 # push all images: latest and tagged 

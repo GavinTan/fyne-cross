@@ -15,7 +15,9 @@ COPY --from=builder /go/bin/gowindres /usr/local/bin
 
 RUN apt-get update \
     && apt-get install -y -q --no-install-recommends \
+        gcc-multilib \
         gcc-mingw-w64 \
+        libz-mingw-w64-dev \
         parallel \
     && apt-get -qy autoremove \
     && apt-get clean \
