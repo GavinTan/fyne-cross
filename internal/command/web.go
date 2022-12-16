@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fyne-io/fyne-cross/internal/log"
-	"github.com/fyne-io/fyne-cross/internal/volume"
+	"github.com/gavintan/fyne-cross/internal/log"
+	"github.com/gavintan/fyne-cross/internal/volume"
 )
 
 const (

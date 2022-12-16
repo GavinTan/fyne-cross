@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/fyne-io/fyne-cross/internal/icon"
-	"github.com/fyne-io/fyne-cross/internal/log"
-	"github.com/fyne-io/fyne-cross/internal/volume"
+	"github.com/gavintan/fyne-cross/internal/icon"
+	"github.com/gavintan/fyne-cross/internal/log"
+	"github.com/gavintan/fyne-cross/internal/volume"
 
 	"golang.org/x/sys/execabs"
 )

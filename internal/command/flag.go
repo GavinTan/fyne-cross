@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fyne-io/fyne-cross/internal/metadata"
-	"github.com/fyne-io/fyne-cross/internal/volume"
+	"github.com/gavintan/fyne-cross/internal/metadata"
+	"github.com/gavintan/fyne-cross/internal/volume"
 )
 
 var flagSet = flag.NewFlagSet("fyne-cross", flag.ExitOnError)
