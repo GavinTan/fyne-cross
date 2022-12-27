@@ -4,7 +4,7 @@ ARG OSX_CROSS_COMMIT="8a716a43a72dab1db9630d7824ee0af3730cb8f9"
 ARG FYNE_CROSS_VERSION=1.3
 
 ## Build osxcross toolchain
-FROM docker.io/fyneio/fyne-cross:${FYNE_CROSS_VERSION}-base-llvm as osxcross
+FROM docker.io/yyxx/fyne-cross:${FYNE_CROSS_VERSION}-base-llvm as osxcross
 ARG OSX_CROSS_COMMIT
 ARG OSX_VERSION_MIN
 
