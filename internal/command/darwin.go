@@ -234,8 +234,8 @@ func darwinContext(flags *darwinFlags, args []string) ([]Context, error) {
 		case ArchAmd64:
 			ctx.Env["GOARCH"] = "amd64"
 			ctx.Env["CC"] = "o64-clang"
-			ctx.Env["CGO_CFLAGS"] = "-mmacosx-version-min=10.12"
-			ctx.Env["CGO_LDFLAGS"] = "-mmacosx-version-min=10.12"
+			ctx.Env["CGO_CFLAGS"] = "-mmacosx-version-min=10.14"
+			ctx.Env["CGO_LDFLAGS"] = "-mmacosx-version-min=10.14"
 		case ArchArm64:
 			ctx.Env["GOARCH"] = "arm64"
 			ctx.Env["CC"] = "oa64-clang"
