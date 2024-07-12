@@ -1,5 +1,11 @@
 # Changelog - Fyne.io fyne-cross
 
+## 1.3.1 - 2024/7/12
+
+### Changed
+
+- Update Go version to v1.22.5
+
 ## 1.3.0 - Unreleased
 
 ### Added
