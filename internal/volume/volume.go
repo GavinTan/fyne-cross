@@ -7,13 +7,10 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/gavintan/fyne-cross/internal/icon"
 )
 
 const (
@@ -33,11 +30,11 @@ const (
 
 // Copy copies a resource from src to dest
 func Copy(src string, dst string) error {
-	data, err := ioutil.ReadFile(src)
+	data, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(dst, data, 0644)
+	return os.WriteFile(dst, data, 0644)
 }
 
 // DefaultCacheDirHost returns the default cache dir on the host
@@ -47,15 +44,6 @@ func DefaultCacheDirHost() (string, error) {
 		return "", fmt.Errorf("cannot get the path for the system cache directory on the host %s", err)
 	}
 	return JoinPathHost(userCacheDir, fyneCrossPrefix), nil
-}
-
-// DefaultIconHost returns the default icon path on the host
-func DefaultIconHost() (string, error) {
-	wd, err := DefaultWorkDirHost()
-	if err != nil {
-		return "", err
-	}
-	return JoinPathHost(wd, icon.Default), nil
 }
 
 // DefaultWorkDirHost returns the default work dir on the host

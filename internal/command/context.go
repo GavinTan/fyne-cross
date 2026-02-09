@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -39,26 +40,31 @@ type Context struct {
 	// Volume holds the mounted volumes between host and containers
 	volume.Volume
 
-	Architecture                   // Arch defines the target architecture
-	Engine       Engine            // Engine is the container engine to use
-	Env          map[string]string // Env is the list of custom env variable to set. Specified as "KEY=VALUE"
-	ID           string            // ID is the context ID
-	LdFlags      []string          // LdFlags defines the ldflags to use
-	OS           string            // OS defines the target OS
-	Tags         []string          // Tags defines the tags to use
+	Engine    Engine            // Engine is the container engine to use
+	Namespace string            // Namespace used by Kubernetes engine to run its pod in
+	S3Path    string            // Project base directory to use to push and pull data from S3
+	SizeLimit string            // Container mount point size limits honored by Kubernetes only
+	Env       map[string]string // Env is the list of custom env variable to set. Specified as "KEY=VALUE"
+	Tags      []string          // Tags defines the tags to use
+	Metadata  map[string]string // Metadata contain custom metadata passed to fyne package
 
-	AppBuild     string // Build number
-	AppID        string // AppID is the appID to use for distribution
-	AppVersion   string // AppVersion is the version number in the form x, x.y or x.y.z semantic version
-	CacheEnabled bool   // CacheEnabled if true enable go build cache
-	DockerImage  string // DockerImage defines the docker image used to build
-	Icon         string // Icon is the optional icon in png format to use for distribution
-	Name         string // Name is the application name
-	Package      string // Package is the package to build named by the import path as per 'go build'
-	Release      bool   // Enable release mode. If true, prepares an application for public distribution
-	StripDebug   bool   // StripDebug if true, strips binary output
-	Debug        bool   // Debug if true enable debug log
-	Pull         bool   // Pull if true attempts to pull a newer version of the docker image
+	AppBuild         string // Build number
+	AppID            string // AppID is the appID to use for distribution
+	AppVersion       string // AppVersion is the version number in the form x, x.y or x.y.z semantic version
+	CacheEnabled     bool   // CacheEnabled if true enable go build cache
+	Icon             string // Icon is the optional icon in png format to use for distribution
+	Name             string // Name is the application name
+	Package          string // Package is the package to build named by the import path as per 'go build'
+	Release          bool   // Enable release mode. If true, prepares an application for public distribution
+	StripDebug       bool   // StripDebug if true, strips binary output
+	Debug            bool   // Debug if true enable debug log
+	Pull             bool   // Pull if true attempts to pull a newer version of the docker image
+	NoProjectUpload  bool   // NoProjectUpload if true, the build will be done with the artifact already stored on S3
+	NoResultDownload bool   // NoResultDownload if true, the result of the build will be left on S3 and not downloaded locally
+	NoNetwork        bool   // NoNetwork if true, the build will be done without network access
+
+	//Build context
+	BuildMode string // The -buildmode argument to pass to go build
 
 	// Release context
 	Category     string //Category represents the category of the app for store listing [macOS]
@@ -67,6 +73,7 @@ type Context struct {
 	Keystore     string //Keystore represents the location of .keystore file containing signing information [Android]
 	KeystorePass string //KeystorePass represents the password for the .keystore file [Android]
 	KeyPass      string //KeyPass represents the assword for the signer's private key, which is needed if the private key is password-protected [Android]
+	KeyName      string //KeyName represents the name of the key to sign the build [Android]
 	Password     string //Password represents the password for the certificate used to sign the build [Windows]
 	Profile      string //Profile represents the name of the provisioning profile for this release build [iOS]
 }
@@ -85,6 +92,18 @@ Name: {{ .Name }}
 	return buf.String()
 }
 
+func overrideDockerImage(flags *CommonFlags, image string) string {
+	if flags.DockerImage != "" {
+		return flags.DockerImage
+	}
+
+	if flags.DockerRegistry != "" {
+		return fmt.Sprintf("%s/%s", flags.DockerRegistry, image)
+	}
+
+	return image
+}
+
 func makeDefaultContext(flags *CommonFlags, args []string) (Context, error) {
 	// mount the fyne-cross volume
 	vol, err := volume.Mount(flags.RootDir, flags.CacheDir)
@@ -94,29 +113,42 @@ func makeDefaultContext(flags *CommonFlags, args []string) (Context, error) {
 
 	engine := flags.Engine.Engine
 	if (engine == Engine{}) {
-		// attempt to autodetect
-		engine, err = MakeEngine(autodetectEngine)
-		if err != nil {
-			return Context{}, err
+		if flags.Namespace != "" && flags.Namespace != "default" {
+			engine, err = MakeEngine(kubernetesEngine)
+			if err != nil {
+				return Context{}, err
+			}
+		} else {
+			// attempt to autodetect
+			engine, err = MakeEngine(autodetectEngine)
+			if err != nil {
+				return Context{}, err
+			}
 		}
 	}
 
 	// set context based on command-line flags
 	ctx := Context{
-		AppID:        flags.AppID,
-		AppVersion:   flags.AppVersion,
-		CacheEnabled: !flags.NoCache,
-		DockerImage:  flags.DockerImage,
-		Engine:       engine,
-		Env:          make(map[string]string),
-		Tags:         flags.Tags,
-		Icon:         flags.Icon,
-		Name:         flags.Name,
-		StripDebug:   !flags.NoStripDebug,
-		Debug:        flags.Debug,
-		Volume:       vol,
-		Pull:         flags.Pull,
-		Release:      flags.Release,
+		AppID:            flags.AppID,
+		AppVersion:       flags.AppVersion,
+		CacheEnabled:     !flags.NoCache,
+		NoProjectUpload:  flags.NoProjectUpload,
+		NoResultDownload: flags.NoResultDownload,
+		Engine:           engine,
+		Namespace:        flags.Namespace,
+		S3Path:           flags.S3Path,
+		SizeLimit:        flags.SizeLimit,
+		Env:              make(map[string]string),
+		Tags:             flags.Tags,
+		Metadata:         flags.Metadata.values,
+		Icon:             flags.Icon,
+		Name:             flags.Name,
+		StripDebug:       !flags.NoStripDebug,
+		Debug:            flags.Debug,
+		NoNetwork:        flags.NoNetwork,
+		Volume:           vol,
+		Pull:             flags.Pull,
+		Release:          flags.Release,
 	}
 
 	if flags.AppBuild <= 0 {
@@ -143,8 +175,20 @@ func makeDefaultContext(flags *CommonFlags, args []string) (Context, error) {
 		return ctx, err
 	}
 
+	if env := os.Getenv("GOFLAGS"); env != "" {
+		ctx.Env["GOFLAGS"] = env
+	}
+
 	if len(flags.Ldflags) > 0 {
-		ctx.LdFlags = append(ctx.LdFlags, flags.Ldflags)
+		goflags := ""
+		for _, ldflags := range strings.Fields(flags.Ldflags) {
+			goflags += "-ldflags=" + ldflags + " "
+		}
+		if v, ok := ctx.Env["GOFLAGS"]; ok {
+			ctx.Env["GOFLAGS"] = strings.TrimSpace(v + " " + goflags)
+		} else {
+			ctx.Env["GOFLAGS"] = strings.TrimSpace(goflags)
+		}
 	}
 
 	if flags.Silent {
@@ -153,6 +197,7 @@ func makeDefaultContext(flags *CommonFlags, args []string) (Context, error) {
 
 	if flags.Debug {
 		log.SetLevel(log.LevelDebug)
+		debugEnable = true
 	}
 
 	return ctx, nil

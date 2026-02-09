@@ -1,46 +1,35 @@
-ARG LLVM_VERSION=12
-ARG OSX_VERSION_MIN=10.14
-ARG OSX_CROSS_COMMIT="8a716a43a72dab1db9630d7824ee0af3730cb8f9"
-ARG FYNE_CROSS_VERSION=1.3
+FROM fyneio/fyne-cross-images:darwin
 
-## Build osxcross toolchain
-FROM docker.io/fyneio/fyne-cross:${FYNE_CROSS_VERSION}-base-llvm as osxcross
-ARG OSX_CROSS_COMMIT
-ARG OSX_VERSION_MIN
+ENV GO_VERSION=1.25.7
+ENV GO_AMD64_CHECKSUM="12e6d6a191091ae27dc31f6efc630e3a3b8ba409baf3573d955b196fdf086005"
+ENV GO_ARM64_CHECKSUM="ba611a53534135a81067240eff9508cd7e256c560edd5d8c2fef54f083c07129"
+ENV FYNE_VERSION=v2.7.2
 
-RUN apt-get update -qq && apt-get install -y -q --no-install-recommends \
-    bzip2 \
-    cmake \ 
-    cpio \
-    patch \
-    libbz2-dev \
-    libssl-dev \
-    zlib1g-dev \
-    liblzma-dev \
-    libxml2-dev \
-    uuid-dev \
- && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    url=; \
+    case "$arch" in \
+        'amd64') \
+            url="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz";\
+            sha256=${GO_AMD64_CHECKSUM};\
+            ;; \
+        'arm64') \
+            url="https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz";\
+            sha256=${GO_ARM64_CHECKSUM};\
+            ;; \
+        *) echo >&2 "error: unsupported architecture '$arch'"; exit 1 ;; \
+    esac; \
+    rm -rf /usr/local/go; \
+    curl -sSL ${url} -o go.tgz; \
+    echo ${sha256} go.tgz | sha256sum -c -; \
+    tar -C /usr/local -zxf go.tgz; \
+    rm go.tgz; \
+    go version;
 
-COPY *.dmg /tmp/command_line_tools_for_xcode.dmg
+RUN set -eux; \ 
+    go install -ldflags="-w -s" -v "fyne.io/fyne/v2/cmd/fyne@${FYNE_VERSION}"; \
+    mv /go/bin/fyne /usr/local/bin/fyne; \
+    go clean -cache -modcache;
 
-WORKDIR "/osxcross"
-
-RUN curl -L https://github.com/tpoechtrager/osxcross/archive/${OSX_CROSS_COMMIT}.tar.gz | tar -zx --strip-components=1
-
-RUN ./tools/gen_sdk_package_tools_dmg.sh /tmp/command_line_tools_for_xcode.dmg
-
-ARG SDK_VERSION
-RUN echo "Available SDKs:" && ls -1 MacOSX*.tar.* && \
-    if [ -z "$SDK_VERSION" ] ;\
-     then ls -1 MacOSX*.tar.* | sort -Vr | head -1 | xargs -i mv {} tarballs ;\
-     else mv MacOSX*.tar.* tarballs ; \
-    fi
-
-RUN UNATTENDED=yes SDK_VERSION=${SDK_VERSION} OSX_VERSION_MIN=${OSX_VERSION_MIN} ./build.sh
-
-
-## Build darwin-latest image
-FROM docker.io/fyneio/fyne-cross:${FYNE_CROSS_VERSION}-base-llvm
-
-COPY --from=osxcross /osxcross/target /osxcross/target
-ENV PATH=/osxcross/target/bin:$PATH
+#Command_Line_Tools_for_Xcode_14.3.1.dmg
+COPY SDKs/MacOSX12.3.sdk/ /sdk

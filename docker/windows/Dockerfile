@@ -1,24 +1,32 @@
-ARG FYNE_CROSS_VERSION
+FROM fyneio/fyne-cross-images:windows
 
-## Build the gowindres CLI tool
-FROM fyneio/fyne-cross:${FYNE_CROSS_VERSION}-base AS builder
+ENV GO_VERSION=1.25.7
+ENV GO_AMD64_CHECKSUM="12e6d6a191091ae27dc31f6efc630e3a3b8ba409baf3573d955b196fdf086005"
+ENV GO_ARM64_CHECKSUM="ba611a53534135a81067240eff9508cd7e256c560edd5d8c2fef54f083c07129"
+ENV FYNE_VERSION=v2.7.2
 
-WORKDIR /app
-COPY . .
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    url=; \
+    case "$arch" in \
+        'amd64') \
+            url="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz";\
+            sha256=${GO_AMD64_CHECKSUM};\
+            ;; \
+        'arm64') \
+            url="https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz";\
+            sha256=${GO_ARM64_CHECKSUM};\
+            ;; \
+        *) echo >&2 "error: unsupported architecture '$arch'"; exit 1 ;; \
+    esac; \
+    rm -rf /usr/local/go; \
+    curl -sSL ${url} -o go.tgz; \
+    echo ${sha256} go.tgz | sha256sum -c -; \
+    tar -C /usr/local -zxf go.tgz; \
+    rm go.tgz; \
+    go version;
 
-RUN go build -o /go/bin/gowindres -ldflags="-w -s" ./internal/cmd/gowindres
-
-# Build the windows-base image
-FROM fyneio/fyne-cross:${FYNE_CROSS_VERSION}-base AS windows-base
-
-COPY --from=builder /go/bin/gowindres /usr/local/bin
-
-RUN apt-get update \
-    && apt-get install -y -q --no-install-recommends \
-        gcc-multilib \
-        gcc-mingw-w64 \
-        libz-mingw-w64-dev \
-        parallel \
-    && apt-get -qy autoremove \
-    && apt-get clean \
-    && rm -r /var/lib/apt/lists/*;
+RUN set -eux; \ 
+    go install -ldflags="-w -s" -v "fyne.io/fyne/v2/cmd/fyne@${FYNE_VERSION}"; \
+    mv /go/bin/fyne /usr/local/bin/fyne; \
+    go clean -cache -modcache;

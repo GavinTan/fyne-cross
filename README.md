@@ -8,46 +8,50 @@ the MinGW compiler for Windows, FreeBSD, and a macOS SDK, along with the Fyne
 requirements.
 
 Supported targets are:
-  -  darwin/amd64
-  -  darwin/arm64
-  -  freebsd/amd64
-  -  freebsd/arm64
-  -  linux/amd64
-  -  linux/386
-  -  linux/arm
-  -  linux/arm64
-  -  windows/amd64
-  -  windows/386
-  -  android ([multiple architectures](https://developer.android.com/ndk/guides/abis))
-  -  android/386
-  -  android/amd64
-  -  android/arm
-  -  android/arm64
-  -  ios
 
-> Note: 
+- darwin/amd64
+- darwin/arm64
+- freebsd/amd64
+- freebsd/arm64
+- linux/amd64
+- linux/386
+- linux/arm
+- linux/arm64
+- windows/amd64
+- windows/arm64
+- windows/386
+- android ([multiple architectures](https://developer.android.com/ndk/guides/abis))
+- android/386
+- android/amd64
+- android/arm
+- android/arm64
+- ios
+
+> Note:
+>
 > - iOS compilation is supported only on darwin hosts. See [fyne pre-requisites](https://developer.fyne.io/started/#prerequisites) for details.
-> - macOS packaging for public distrubution (release mode) is supported only on darwin hosts.
-> - windows packaging for public distrubution (release mode) is supported only on windows hosts.
+> - macOS packaging for public distribution (release mode) is supported only on darwin hosts.
+> - windows packaging for public distribution (release mode) is supported only on windows hosts.
 > - starting from v1.1.0:
->   - cross-compile from NOT `darwin` (i.e. linux) to `darwin`: the image with the macOS SDK is no more available via docker hub and has to be built manually, see the [Build the darwin image](#build_darwin_image) section below.
+>   - cross-compile from NOT `darwin` (i.e. linux) to `darwin`: requires a copy of the macOS SDK on the host. The fyne-cross `darwin-sdk-extractor` command can be used to extract the SDK from the XCode CLI Tool file, see the [Extract the macOS SDK](#extract_macos_sdk) section below.
 >   - cross-compile from `darwin` to `darwin` by default will use under the hood the fyne CLI tool and requires Go and the macOS SDK installed on the host.
+> - starting from v1.4.0, Arm64 hosts are supported for all platforms except Android.
 
 ## Requirements
 
-- go >= 1.14
+- go >= 1.25
 - docker
 
 ### Installation
 
-For go >= 1.16:
-```
+```sh
 go install github.com/gavintan/fyne-cross@latest
 ```
 
-For older go:
-```
-GO111MODULE=on go get -u github.com/gavintan/fyne-cross
+To install a fyne-cross with kubernetes engine support:
+
+```sh
+go install -tags k8s github.com/gavintan/fyne-cross@latest
 ```
 
 > `fyne-cross` will be installed in GOPATH/bin, unless GOBIN is set.
@@ -59,26 +63,26 @@ If set, fyne-cross will attempt to pull the image required to cross compile the 
 
 For example:
 
-```
+```sh
 fyne-cross linux --pull
 ```
 
-will pull only the `fyne-cross:base-latest` image required to cross compile for linux target.   
+will pull only the `fyne-cross:base-latest` image required to cross compile for linux target.
 
 ## Usage
 
-```
+```sh
 fyne-cross <command> [options]
 
 The commands are:
 
-	darwin        Build and package a fyne application for the darwin OS
-	linux         Build and package a fyne application for the linux OS
-	windows       Build and package a fyne application for the windows OS
-	android       Build and package a fyne application for the android OS
-	ios           Build and package a fyne application for the iOS OS
-	freebsd       Build and package a fyne application for the freebsd OS
-	version       Print the fyne-cross version information
+ darwin        Build and package a fyne application for the darwin OS
+ linux         Build and package a fyne application for the linux OS
+ windows       Build and package a fyne application for the windows OS
+ android       Build and package a fyne application for the android OS
+ ios           Build and package a fyne application for the iOS OS
+ freebsd       Build and package a fyne application for the freebsd OS
+ version       Print the fyne-cross version information
 
 Use "fyne-cross <command> -help" for more information about a command.
 ```
@@ -89,13 +93,13 @@ The `arch` flag support wildcards in case want to compile against all supported 
 
 Example:
 
-```
+```sh
 fyne-cross windows -arch=*
 ```
 
 is equivalent to
 
-```
+```sh
 fyne-cross windows -arch=amd64,386
 ```
 
@@ -110,7 +114,7 @@ cd examples
 
 ### Compile and package the main example app
 
-```
+```sh
 fyne-cross linux
 ```
 
@@ -120,37 +124,30 @@ fyne-cross linux
 
 ### Compile and package a particular example app
 
-```
+```sh
 fyne-cross linux -output bugs ./cmd/bugs
 ```
 
-## <a name="build_darwin_image"></a>Build the docker image for OSX/Darwin/Apple cross-compiling
-The docker image for darwin is not provided via docker hub and need to build manually since it depends on the macOS SDK.
+## <a name="extract_macos_sdk"></a>Extract the macOS SDK for OSX/Darwin/Apple cross-compiling
 
-**[Please ensure you have read and understood the Xcode license
-   terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf)**
+cross-compile from NOT `darwin` (i.e. linux) to `darwin` requires a copy of the macOS SDK on the host.
 
-To build the image:
-1. [Download Command Line Tools for Xcode](https://developer.apple.com/download/all/?q=Command%20Line%20Tools) >= 12.4 (macOS SDK 11.x)
-2. Run: `fyne-cross darwin-image --xcode-path /path/to/Command_Line_Tools_for_Xcode_12.5.dmg`
+The fyne-cross `darwin-sdk-extractor` command can be used to extract the SDK from the XCode CLI Tool file.
 
-The command above will:
-- install the dependencies required by [osxcross](https://github.com/tpoechtrager/osxcross) to package the macOS SDK and compile the macOS cross toolchain.
-- package the macOS SDK
-- compile the macOS cross toolchain
-- build the `fyneio/fyne-cross:<ver>-darwin` image that will be used by fyne-cross
+**[Please ensure you have read and understood the Xcode license terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf)**
 
-> NOTE: the creation of the image may take several minutes and may require more than 25 GB of free disk space.
+To extract the SDKs:
 
-### [EXPERIMENTAL] Build using a different SDK version
+1. [Download Command Line Tools for Xcode](https://developer.apple.com/download/all/?q=Command%20Line%20Tools) 12.5.1 (macOS SDK 11.3)
+2. Run: `fyne-cross darwin-sdk-extract --xcode-path /path/to/Command_Line_Tools_for_Xcode_12.5.1.dmg`
 
-By default fyne-cross will attempt to auto-detect the latest version of SDK provided by the Xcode package. If for any reason a different SDK version is required, it can be specified using the `--sdk-version` flag.
+- Once extraction has been done, you should have a SDKs directory created.
+  This directory should contains at least 2 SDKs (ex. `SDKs/MacOSX11.3.sdk/` and `SDKs/MacOSX10.15.sdk/`)
 
-Example:
+3. Specify explicitly which SDK you want to use in your fyne-cross command with --macosx-sdk-path:
+   `fyne-cross darwin --macosx-sdk-path /full/path/to/SDKs/MacOSX11.3.sdk -app-id your.app.id`
 
-`fyne-cross darwin-image --sdk-version 11.1 --xcode-path /path/to/Command_Line_Tools_for_Xcode_12.4.dmg`
-
-> Note: this feature is marked as EXPERIMENTAL
+> Note: current version supports only MacOS SDK 11.3
 
 ## Contribute
 
